@@ -41,7 +41,7 @@ function App() {
   const handleDeleteTodo = async (id) => {
     try {
       await apiDeleteTodo(id);
-      setTodos((prev) => prev.filter((todo) => todo.id !== id));
+      setTodos((prev) => prev.filter((todo) => todo._id !== id));
     } catch (err) {
       console.error("Lỗi khi xóa:", err.message);
     }
@@ -51,7 +51,7 @@ function App() {
   const handleDeleteSelected = async () => {
     try {
       await Promise.all(selectedIds.map(apiDeleteTodo));
-      setTodos((prev) => prev.filter((t) => !selectedIds.includes(t.id)));
+      setTodos((prev) => prev.filter((t) => !selectedIds.includes(t._id)));
       setSelectedIds([]);
     } catch (err) {
       console.error("Lỗi khi xóa nhiều:", err.message);
@@ -64,7 +64,7 @@ function App() {
       await apiUpdateTodo(id, { completed });
       setTodos((prev) =>
         prev.map((todo) =>
-          todo.id === id ? { ...todo, completed } : todo
+          todo._id === id ? { ...todo, completed } : todo
         )
       );
     } catch (err) {
@@ -78,7 +78,7 @@ function App() {
       await apiUpdateTodo(id, { text: editText });
       setTodos((prev) =>
         prev.map((todo) =>
-          todo.id === id ? { ...todo, text: editText } : todo
+          todo._id === id ? { ...todo, text: editText } : todo
         )
       );
       setEditId(null);
@@ -113,7 +113,7 @@ function App() {
       <ul>
         {todos.map((todo) => (
           <li
-            key={todo.id}
+            key={todo._id}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -128,16 +128,16 @@ function App() {
             <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
               <input
                 type="checkbox"
-                checked={selectedIds.includes(todo.id)}
+                checked={selectedIds.includes(todo._id)}
                 onChange={() =>
                   setSelectedIds((prev) =>
-                    prev.includes(todo.id)
-                      ? prev.filter((sid) => sid !== todo.id)
-                      : [...prev, todo.id]
+                    prev.includes(todo._id)
+                      ? prev.filter((sid) => sid !== todo._id)
+                      : [...prev, todo._id]
                   )
                 }
               />
-              {editId === todo.id ? (
+              {editId === todo._id ? (
                 <input
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
@@ -155,9 +155,9 @@ function App() {
               )}
             </div>
             <div style={{ marginTop: "8px", width: "100%" }}>
-              {editId === todo.id ? (
+              {editId === todo._id ? (
                 <>
-                  <button onClick={() => handleSaveEdit(todo.id)} style={{
+                  <button onClick={() => handleSaveEdit(todo._id)} style={{
                     backgroundColor: "#4CAF50",
                     color: "#fff",
                     border: "none",
@@ -180,7 +180,7 @@ function App() {
                 <>
                   <button
                     onClick={() => {
-                      setEditId(todo.id);
+                      setEditId(todo._id);
                       setEditText(todo.text);
                     }} style={{
                       backgroundColor: "#2196F3",
@@ -194,7 +194,7 @@ function App() {
                   >
                     Sửa
                   </button>
-                  <button onClick={() => handleDeleteTodo(todo.id)} style={{
+                  <button onClick={() => handleDeleteTodo(todo._id)} style={{
                     backgroundColor: "#ff4d4d",
                     color: "#fff",
                     border: "none",
@@ -205,7 +205,7 @@ function App() {
                   }}>Xóa</button>
                   <button
                     onClick={() =>
-                      handleToggleComplete(todo.id, !todo.completed)
+                      handleToggleComplete(todo._id, !todo.completed)
                     } style={{
                       backgroundColor: "green",
                       color: "#fff",

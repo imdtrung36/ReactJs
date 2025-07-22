@@ -21,7 +21,7 @@ export const deleteTodo = async (id) => {
 
 // Cập nhật todo (sửa nội dung hoặc trạng thái hoàn thành)
 export const updateTodo = async (id, data) => {
-  return axios.patch(`${API_URL}/${id}`, data);
+  return axios.put(`${API_URL}/${id}`, data);
 };
 
 
