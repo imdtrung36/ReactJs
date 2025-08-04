@@ -4,34 +4,34 @@ import {
   addTodo as apiAddTodo,
   deleteTodo as apiDeleteTodo,
   updateTodo as apiUpdateTodo,
+  deleteMultipleTodos,
 } from "./api";
-import TodoForm from "./Todo/TodoForm";
-import axios from "axios";
 
 function App() {
   const [todos, setTodos] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
-  // Nếu dùng addTodo phía dưới thì cần thêm newText state
   const [newText, setNewText] = useState("");
 
   // Lấy danh sách todo
   useEffect(() => {
-    axios.get("http://localhost:5000/todos")
-      .then((res) => {
-        console.log("Todos API:", res.data); // Log dữ liệu
-        setTodos(res.data);
-      })
-      .catch((err) => console.error("Lỗi khi lấy todo:", err));
+    const loadTodos = async () => {
+      try {
+        const todosData = await fetchTodos();
+        setTodos(todosData);
+      } catch (err) {
+        console.error("Lỗi khi lấy todo:", err);
+      }
+    };
+    loadTodos();
   }, []);
 
   // Thêm todo
   const handleAddTodo = async (text) => {
     try {
-      const res = await apiAddTodo(text);
-      console.log("Add todo API:", res.data); // Thêm dòng này
-      setTodos((prev) => [...prev, res.data]);
+      const newTodo = await apiAddTodo(text);
+      setTodos((prev) => [...prev, newTodo]);
     } catch (err) {
       console.error("Lỗi add:", err.message);
     }
@@ -41,7 +41,7 @@ function App() {
   const handleDeleteTodo = async (id) => {
     try {
       await apiDeleteTodo(id);
-      setTodos((prev) => prev.filter((todo) => todo._id !== id));
+      setTodos((prev) => prev.filter((todo) => todo.id !== id));
     } catch (err) {
       console.error("Lỗi khi xóa:", err.message);
     }
@@ -50,8 +50,8 @@ function App() {
   // Xóa nhiều todo
   const handleDeleteSelected = async () => {
     try {
-      await Promise.all(selectedIds.map(apiDeleteTodo));
-      setTodos((prev) => prev.filter((t) => !selectedIds.includes(t._id)));
+      await deleteMultipleTodos(selectedIds);
+      setTodos((prev) => prev.filter((t) => !selectedIds.includes(t.id)));
       setSelectedIds([]);
     } catch (err) {
       console.error("Lỗi khi xóa nhiều:", err.message);
@@ -64,7 +64,7 @@ function App() {
       await apiUpdateTodo(id, { completed });
       setTodos((prev) =>
         prev.map((todo) =>
-          todo._id === id ? { ...todo, completed } : todo
+          todo.id === id ? { ...todo, completed } : todo
         )
       );
     } catch (err) {
@@ -78,7 +78,7 @@ function App() {
       await apiUpdateTodo(id, { text: editText });
       setTodos((prev) =>
         prev.map((todo) =>
-          todo._id === id ? { ...todo, text: editText } : todo
+          todo.id === id ? { ...todo, text: editText } : todo
         )
       );
       setEditId(null);
@@ -88,66 +88,119 @@ function App() {
     }
   };
 
-  //Thêm todo mới
-  const addTodo = () => {
+  // Thêm todo mới (từ input)
+  const addTodo = async () => {
     if (newText.trim() === "") return;
-    axios.post("http://localhost:5000/todos", { text: newText })
-      .then(res => {
-        setTodos(prev => [...prev, res.data]);
-        setNewText("");
-      })
-      .catch(err => console.error("Lỗi khi thêm todo:", err));
+    try {
+      const newTodo = await apiAddTodo(newText);
+      setTodos(prev => [...prev, newTodo]);
+      setNewText("");
+    } catch (err) {
+      console.error("Lỗi khi thêm todo:", err);
+    }
   };
 
   return (
     <div style={{ padding: "20px", maxWidth: "500px", margin: "auto" }}>
       <h2>Danh sách công việc</h2>
-      <TodoForm onAdd={handleAddTodo} />
+      
+      {/* Form thêm todo */}
+      <div style={{ marginBottom: "20px" }}>
+        <input
+          type="text"
+          value={newText}
+          onChange={(e) => setNewText(e.target.value)}
+          placeholder="Nhập công việc mới..."
+          style={{ 
+            padding: "8px", 
+            marginRight: "8px", 
+            width: "300px",
+            borderRadius: "4px",
+            border: "1px solid #ccc"
+          }}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+        />
+        <button 
+          onClick={addTodo}
+          style={{
+            backgroundColor: "#4CAF50",
+            color: "white",
+            padding: "8px 16px",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer"
+          }}
+        >
+          Thêm
+        </button>
+      </div>
+
       <button
         onClick={handleDeleteSelected}
         disabled={selectedIds.length === 0}
-        style={{ marginBottom: "10px" }}
+        style={{ 
+          marginBottom: "10px",
+          backgroundColor: "#f44336",
+          color: "white",
+          padding: "8px 16px",
+          border: "none",
+          borderRadius: "4px",
+          cursor: selectedIds.length === 0 ? "not-allowed" : "pointer",
+          opacity: selectedIds.length === 0 ? 0.6 : 1
+        }}
       >
-        Xoá các mục đã chọn
+        Xoá các mục đã chọn ({selectedIds.length})
       </button>
-      <ul>
+      
+      <ul style={{ listStyle: "none", padding: 0 }}>
         {todos.map((todo) => (
           <li
-            key={todo._id}
+            key={todo.id}
             style={{
               display: "flex",
               flexDirection: "column",
               alignItems: "flex-start",
               marginBottom: "12px",
-              padding: "8px",
-              border: "1px solid #ccc",
+              padding: "12px",
+              border: "1px solid #ddd",
               borderRadius: "8px",
-              background: "#fff"
+              background: "#fff",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
             }}
           >
             <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
               <input
                 type="checkbox"
-                checked={selectedIds.includes(todo._id)}
+                checked={selectedIds.includes(todo.id)}
                 onChange={() =>
                   setSelectedIds((prev) =>
-                    prev.includes(todo._id)
-                      ? prev.filter((sid) => sid !== todo._id)
-                      : [...prev, todo._id]
+                    prev.includes(todo.id)
+                      ? prev.filter((sid) => sid !== todo.id)
+                      : [...prev, todo.id]
                   )
                 }
+                style={{ marginRight: "8px" }}
               />
-              {editId === todo._id ? (
+              {editId === todo.id ? (
                 <input
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  style={{ padding: "4px", flex: 1, marginLeft: "8px" }}
+                  style={{ 
+                    padding: "6px", 
+                    flex: 1, 
+                    marginLeft: "8px",
+                    borderRadius: "4px",
+                    border: "1px solid #ccc"
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit(todo.id)}
                 />
               ) : (
                 <span
                   style={{
                     textDecoration: todo.completed ? "line-through" : "none",
-                    marginLeft: "8px"
+                    marginLeft: "8px",
+                    flex: 1,
+                    color: todo.completed ? "#888" : "#000"
                   }}
                 >
                   {todo.text}
@@ -155,23 +208,26 @@ function App() {
               )}
             </div>
             <div style={{ marginTop: "8px", width: "100%" }}>
-              {editId === todo._id ? (
+              {editId === todo.id ? (
                 <>
-                  <button onClick={() => handleSaveEdit(todo._id)} style={{
+                  <button onClick={() => handleSaveEdit(todo.id)} style={{
                     backgroundColor: "#4CAF50",
                     color: "#fff",
                     border: "none",
-                    padding: "6px 10px",
-                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "4px",
                     marginRight: "6px",
                     cursor: "pointer",
                   }}>Lưu</button>
-                  <button onClick={() => setEditId(null)} style={{
+                  <button onClick={() => {
+                    setEditId(null);
+                    setEditText("");
+                  }} style={{
                     backgroundColor: "#ccc",
                     color: "#000",
                     border: "none",
-                    padding: "6px 10px",
-                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "4px",
                     marginRight: "6px",
                     cursor: "pointer",
                   }}>Hủy</button>
@@ -180,40 +236,39 @@ function App() {
                 <>
                   <button
                     onClick={() => {
-                      setEditId(todo._id);
+                      setEditId(todo.id);
                       setEditText(todo.text);
                     }} style={{
                       backgroundColor: "#2196F3",
                       color: "#fff",
                       border: "none",
-                      padding: "6px 10px",
-                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      borderRadius: "4px",
                       marginRight: "6px",
                       cursor: "pointer",
                     }}
                   >
                     Sửa
                   </button>
-                  <button onClick={() => handleDeleteTodo(todo._id)} style={{
+                  <button onClick={() => handleDeleteTodo(todo.id)} style={{
                     backgroundColor: "#ff4d4d",
                     color: "#fff",
                     border: "none",
-                    padding: "6px 10px",
-                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "4px",
                     cursor: "pointer",
                     marginRight: "6px"
                   }}>Xóa</button>
                   <button
                     onClick={() =>
-                      handleToggleComplete(todo._id, !todo.completed)
+                      handleToggleComplete(todo.id, !todo.completed)
                     } style={{
-                      backgroundColor: "green",
+                      backgroundColor: todo.completed ? "#ff9800" : "#4CAF50",
                       color: "#fff",
                       border: "none",
-                      padding: "6px 10px",
-                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      borderRadius: "4px",
                       cursor: "pointer",
-                      marginLeft: "6px",
                     }}
                   >
                     {todo.completed ? "Bỏ hoàn thành" : "Hoàn thành"}
