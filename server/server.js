@@ -124,14 +124,25 @@ app.delete("/todos/:id", (req, res) => {
 
 // API: Xóa nhiều todo
 app.delete("/todos/bulk", (req, res) => {
+  console.log("Bulk delete request received");
+  console.log("Request body:", req.body);
+  console.log("Request headers:", req.headers);
+  
   const { ids } = req.body;
+  console.log("IDs to delete:", ids);
+  
   if (!Array.isArray(ids)) {
+    console.log("Error: ids is not an array");
     return res.status(400).json({ error: "ids must be an array" });
   }
 
+  console.log("Current todos before deletion:", todos);
   const initialLength = todos.length;
   todos = todos.filter((t) => !ids.includes(t.id)); // Use string comparison
   const deletedCount = initialLength - todos.length;
+  
+  console.log("Todos after deletion:", todos);
+  console.log("Deleted count:", deletedCount);
   
   writeTodosToFile(todos); // Save to file
   

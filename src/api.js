@@ -22,7 +22,17 @@ export const deleteTodo = async (id) => {
 
 // Xóa nhiều todo
 export const deleteMultipleTodos = async (ids) => {
-  const response = await axios.delete(`${API_URL}/bulk`, { data: { ids } });
+  console.log("Sending bulk delete request with IDs:", ids);
+  console.log("Request URL:", `${API_URL}/bulk`);
+  
+  const response = await axios.delete(`${API_URL}/bulk`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: { ids }
+  });
+  
+  console.log("Bulk delete response:", response.data);
   return response.data;
 };
 
